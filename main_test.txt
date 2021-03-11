@@ -1,0 +1,6 @@
+jeremy.kim@gmail.com
+test.demo@npr.org
+demo@yahoo.com
+test$10@abc.com
+test!blah@demo.com
+test.4@@@abc.com

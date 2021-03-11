@@ -46,30 +46,21 @@ public class EmailValidator {
 
             FileWriter outputFW = new FileWriter(outputFile.getPath());
             BufferedWriter outputBuffWriter = new BufferedWriter(outputFW);
-            // As a quick explanation of how this regex works,
-            // ^[a-zA-Z0-9_.-] this portion means
-            //          1.) the string can only contain lowercase and uppercase a-z,
-            //          2.) numbers 0-9 and
-            //          3.) only , . _ (comma period underscore characters)
-            // the + (plus symbol) indicates that there needs to be at least one character that fits this criteria above
-            // (?:\.[a-zA-Z0-9_.-]+)
-            //          the (?: indicates that the following will group but not match/capture the expression
-            //          the \\. indicates that we are checking if an expression matches the "." (period)
-            //          the [a-zA-Z0-9_.-] indicates that we are checking for the same criteria as above (letters, numbers, and , . _)
-            //          while the + (plus) indicates that there needs to be at least character that matches any of these criteria,
-            //          the * (asterisk) preceding that means 0 or more needs to match
-            // The @ (at symbol) indicates that there needs to be an @ symbol after the criteria above
+            // As a quick explanation of how this regex checks for:
+            // 1. There must be at least one character that matches the criteria before the @ (at symbol): lowercase/uppercase a-z, numbers, comma, period, underscore
+            // 2. There cannot be any other character than letters, numbers, periods, commas, and underscores before the @ (at symbol)
+            // 3. There must be a @ (at symbol)
+            // 4. There cannot be leading, trailing, or consecutive periods
+            // 5. There cannot be consecutive @ symbols
+            // 6. After the @ symbol, there must be at least one character, must have a period, and must have at least 2 characters following the period
 
             String regex = "^[a-zA-Z0-9_{|}~^-]+(?:\\.[a-zA-Z0-9_!#$%&'*+/=?`{|}~^-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$";
-
             Pattern pattern = Pattern.compile(regex);
 
             while (buffReader.ready()) {
                 String email = buffReader.readLine();
                 Matcher matcher = pattern.matcher(email);
-                System.out.println("original: " + email);
                 if(matcher.matches()) {
-                    System.out.println("validated: " + email);
                     validEmails.add(email);
                 }
             }
@@ -78,8 +69,11 @@ public class EmailValidator {
             insertEmail(validEmails, outputBuffWriter);
 
             logger.log(Level.INFO, "Finished validating and sorting emails in: " + outputFile.getPath());
-            } catch (IOException e) {
+            } catch (FileNotFoundException e) {
                 logger.log(Level.SEVERE, "File was not found in specified path. Error: " + e.getMessage());
+                e.printStackTrace();
+            } catch (IOException e) {
+                logger.log(Level.SEVERE, "Error: " + e.getMessage());
                 e.printStackTrace();
             }
 
@@ -87,6 +81,9 @@ public class EmailValidator {
 
 
     public static void insertEmail (List<String> validEmails, BufferedWriter writer) throws IOException {
+        // Now that the emails are both valid and sorted, we can go ahead and
+        //      1. Write the emails in order of the list
+        //      2. Create a new line after (writer.write does not automatically write on the next line)
         for (int i = 0; i < validEmails.size(); i++) {
             writer.write(validEmails.get(i), 0, validEmails.get(i).length());
             writer.newLine();
@@ -96,6 +93,9 @@ public class EmailValidator {
     }
 
     public static void sortEmail (List<String> validEmails) {
+        // Creating a custom comparator so that we can do two things:
+        //         1. Sort by the string AFTER the @ (at symbol)
+        //         2. Compare the two strings after the @
         Collections.sort(validEmails, new Comparator<String>() {
             @Override
             public int compare(String a, String b) {
